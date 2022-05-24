@@ -7,38 +7,27 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.HibernateException;
 import org.springframework.stereotype.Service;
 import sr.playerfinder.playerfinderback.dto.entity.BoardGame;
+import sr.playerfinder.playerfinderback.dto.entity.MissingGame;
 import sr.playerfinder.playerfinderback.dto.entity.Player;
 import sr.playerfinder.playerfinderback.dto.request.NewPlayerRq;
-import sr.playerfinder.playerfinderback.dto.response.AllGamesRs;
 import sr.playerfinder.playerfinderback.dto.response.NewPlayerRs;
 import sr.playerfinder.playerfinderback.service.entityservice.BoardGameService;
+import sr.playerfinder.playerfinderback.service.entityservice.MissingGameService;
 import sr.playerfinder.playerfinderback.service.entityservice.PlayerService;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class MainHelper {
+public class PlayerRegistrationHelper {
 
     private final BoardGameService boardGameService;
     private final PlayerService playerService;
+    private final MissingGameService missingGameService;
+
     private final ObjectMapper objectMapper;
-
-    public String getAllGames() {
-
-        String result;
-        try {
-            List<BoardGame> gameList = boardGameService.getAll();
-            result = objectMapper.writeValueAsString(new AllGamesRs(gameList));
-            return result;
-        }
-        catch (JsonProcessingException e) {
-            log.error(e.getMessage());
-            return "Internal server error";
-        }
-    }
 
     public String processNewPlayer(NewPlayerRq request) {
 
@@ -48,13 +37,19 @@ public class MainHelper {
                 .phone(request.getPhone())
                 .username(request.getUsername())
                 .password(request.getPassword())
-                .rating(4.0f)
+                .rating(4.0F)
                 .build();
 
-        Set<BoardGame> fetchedGames = boardGameService.findAllInList(request.getGames());
-        newPlayer.setBoardGames(fetchedGames);
+        List<BoardGame> fetchedGames = boardGameService.findAllInList(request.getGames());
+        processMissingGames(request.getGames(), fetchedGames, request.getUsername());
+
+        newPlayer.setBoardGames(new HashSet<>(fetchedGames));
         try {
             playerService.save(newPlayer);
+            for (BoardGame game : fetchedGames) {
+                game.getPlayers().add(newPlayer);
+                boardGameService.save(game);
+            }
             NewPlayerRs response = new NewPlayerRs("Успешная регистрация");
             return objectMapper.writeValueAsString(response);
         }
@@ -67,6 +62,25 @@ public class MainHelper {
             catch (JsonProcessingException ex) {
                 log.error(ex.getMessage());
                 return "Internal server error";
+            }
+        }
+    }
+
+    private void processMissingGames(List<String> games, List<BoardGame> actualGames, String playerName) {
+
+        games.removeIf(name -> actualGames.stream().map(BoardGame::getName).toList().contains(name));
+        for (String gameName : games) {
+            MissingGame curGame = missingGameService.findByName(gameName);
+            if (curGame == null) {
+                missingGameService.save(MissingGame.builder()
+                                .name(gameName)
+                                .suggestedBy(playerName)
+                                .suggestionCount(1L)
+                                .build());
+            }
+            else {
+                curGame.setSuggestionCount(curGame.getSuggestionCount() + 1);
+                missingGameService.save(curGame);
             }
         }
     }
