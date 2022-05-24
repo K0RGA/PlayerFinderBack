@@ -1,24 +1,32 @@
 package sr.playerfinder.playerfinderback.dto.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Table;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter @Setter
 @Builder
-@Table(name = "board_game", schema = "finder")
+@Table(name = "missing_game", schema = "finder")
 @EntityListeners(AuditingEntityListener.class)
-public class BoardGame {
+public class MissingGame {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,19 +37,11 @@ public class BoardGame {
     @Column(name = "name", nullable = false, unique = true)
     private String name;
 
-    @Column(name = "image", nullable = true, length = 1023)
-    private String imageURL;
+    @Column(name = "suggested_by", nullable = true)
+    private String suggestedBy;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            schema = "finder",
-            name = "game_link",
-            joinColumns = @JoinColumn(name = "board_game_id"),
-            inverseJoinColumns = @JoinColumn(name = "player_id"),
-            uniqueConstraints = @UniqueConstraint(columnNames = {"board_game_id", "player_id"})
-    )
-    @JsonIgnore
-    private Set<Player> players = new HashSet<>();
+    @Column(name = "suggestion_count", nullable = true)
+    private Long suggestionCount;
 
     @CreatedDate
     @Column(name = "created", nullable = false)

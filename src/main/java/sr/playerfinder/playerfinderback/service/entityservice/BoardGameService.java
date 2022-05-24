@@ -7,7 +7,6 @@ import sr.playerfinder.playerfinderback.dto.entity.BoardGame;
 import sr.playerfinder.playerfinderback.repository.BoardGameRepository;
 
 import java.util.List;
-import java.util.Set;
 
 @Service
 @Slf4j
@@ -28,7 +27,7 @@ public class BoardGameService {
         return boardGameRepository.findByName(name).orElse(null);
     }
 
-    public Set<BoardGame> findAllInList(List<String> names) {
+    public List<BoardGame> findAllInList(List<String> names) {
         return boardGameRepository.findAllByNameIn(names);
     }
 
