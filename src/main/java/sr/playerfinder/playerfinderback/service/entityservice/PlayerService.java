@@ -24,4 +24,8 @@ public class PlayerService {
     public Player save(Player newPlayer) {
         return playerRepository.save(newPlayer);
     }
+
+    public Long countAll() {
+        return playerRepository.count();
+    }
 }

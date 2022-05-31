@@ -1,19 +1,31 @@
 package sr.playerfinder.playerfinderback.dto.entity;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.ManyToMany;
+import javax.persistence.PreRemove;
+import javax.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
-@Setter
+@Getter @Setter
 @Builder
 @Table(name = "player", schema = "finder")
 @EntityListeners(AuditingEntityListener.class)
@@ -52,4 +64,11 @@ public class Player {
     @LastModifiedDate
     @Column(name = "updated", nullable = false)
     private LocalDateTime updated;
+
+    @PreRemove
+    private void clearLinks() {
+        for (BoardGame game : boardGames) {
+            game.getPlayers().remove(this);
+        }
+    }
 }
